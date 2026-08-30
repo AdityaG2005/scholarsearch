@@ -33,3 +33,15 @@ with open('backend/embeddings/id_map.json', 'w') as f:
 
 print("Done.")
 
+import faiss
+
+print("Building FAISS index...")
+vectors = np.load('backend/embeddings/paper_vectors.npy')
+dim = vectors.shape[1]
+
+index = faiss.IndexFlatL2(dim)
+index.add(vectors.astype('float32'))
+
+faiss.write_index(index, 'backend/embeddings/paper_index.faiss')
+print(f"Index built with {index.ntotal} vectors of dimension {dim}.")
+
