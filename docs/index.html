@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ScholarSearch</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1 { text-align: center; }
+    #searchBar { display: flex; gap: 10px; margin-bottom: 10px; }
+    #q { flex: 1; padding: 10px; font-size: 16px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    #meta { color: #777; font-size: 14px; margin-bottom: 20px; min-height: 18px; }
+    .paper { border-bottom: 1px solid #ddd; padding: 15px 0; }
+    .paper h3 { margin: 0 0 5px 0; }
+    .paper .authors { margin: 5px 0; color: #555; }
+    .paper .abstract { margin: 8px 0; color: #333; font-size: 14px; line-height: 1.4; }    .readmore { background: none; border: none; color: #0645AD; cursor: pointer; padding: 0; font-size: 13px; margin-bottom: 8px; display: block; }
+    .paper .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+    .paper a { color: #0645AD; }
+    .score { background: #eef4ff; color: #0645AD; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <h1>ScholarSearch</h1>
+  <div id="searchBar">
+    <input id="q" placeholder="Search ML papers..." onkeydown="if(event.key==='Enter') search()">
+    <button onclick="search()">Search</button>
+  </div>
+  <div id="meta"></div>
+  <div id="results"></div>
+
+    <script>
+    const API_URL = "https://scholarsearch-backend.onrender.com";
+
+    function truncate(text, maxLen) {
+      if (text.length <= maxLen) return text;
+      const cut = text.slice(0, maxLen);
+      const lastSpace = cut.lastIndexOf(' ');
+      return cut.slice(0, lastSpace) + "...";
+    }
+
+    async function search() {
+      const q = document.getElementById('q').value;
+      if (!q.trim()) return;
+
+      document.getElementById('meta').innerText = "Searching...";
+      document.getElementById('results').innerHTML = "";
+
+      const start = performance.now();
+      const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(q)}&top_k=10`);
+      const data = await res.json();
+      const elapsed = ((performance.now() - start) / 1000).toFixed(2);
+
+      document.getElementById('meta').innerText = `Found ${data.length} results in ${elapsed}s`;
+
+      document.getElementById('results').innerHTML = data.map((p, i) => `
+        <div class="paper">
+          <h3>${p.title}</h3>
+          <p class="authors">${p.authors.join(', ')}</p>
+          <p class="abstract" id="abstract-${i}">${truncate(p.abstract, 250)}</p>
+          ${p.abstract.length > 250 ? `<button class="readmore" onclick="toggleAbstract(${i}, this)" data-full="${encodeURIComponent(p.abstract)}" data-short="${encodeURIComponent(truncate(p.abstract, 250))}">Read more</button>` : ''}
+          <div class="footer">
+            <a href="${p.link}" target="_blank">arXiv link</a>
+            <span class="score">Similarity: ${p.similarity}%</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleAbstract(i, btn) {
+      const el = document.getElementById(`abstract-${i}`);
+      const isShort = btn.innerText === "Read more";
+      el.innerText = decodeURIComponent(isShort ? btn.dataset.full : btn.dataset.short);
+      btn.innerText = isShort ? "Show less" : "Read more";
+    }
+    </script>
+</body>
+</html>
+
