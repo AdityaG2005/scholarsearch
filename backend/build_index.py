@@ -39,8 +39,10 @@ print("Building FAISS index...")
 vectors = np.load('backend/embeddings/paper_vectors.npy')
 dim = vectors.shape[1]
 
+vectors = vectors.astype('float32')
+faiss.normalize_L2(vectors)
 index = faiss.IndexFlatL2(dim)
-index.add(vectors.astype('float32'))
+index.add(vectors)
 
 faiss.write_index(index, 'backend/embeddings/paper_index.faiss')
 print(f"Index built with {index.ntotal} vectors of dimension {dim}.")
